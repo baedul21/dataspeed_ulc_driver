@@ -104,9 +104,13 @@ UlcNode::UlcNode(ros::NodeHandle &n, ros::NodeHandle &pn) :
   pub_can_ = n.advertise<can_msgs::Frame>("can_tx", 100);
 
   // Setup CARMA publishers
-  pub_robot_status_ = n.advertise<cav_msgs::RobotEnabled>("robot_status", 10);
-  pub_discovery_ = n.advertise<cav_msgs::DriverStatus>("discovery", 10);
-
+  //pub_robot_status_ = n.advertise<cav_msgs::RobotEnabled>("robot_status", 10);
+  //pub_discovery_ = n.advertise<cav_msgs::DriverStatus>("discovery", 10);
+    
+  // publishers to autoware
+  vehicle_status_pub_ = nh_.advertise<autoware_msgs::VehicleStatus>("vehicle_status", 10);
+  current_twist_pub_ = nh_.advertise<geometry_msgs::TwistStamped>("vehicle/twist", 10);
+    
   // Setup subscribers
   const ros::TransportHints NODELAY = ros::TransportHints().tcpNoDelay();
   sub_can_ = n.subscribe<can_msgs::Frame>("can_rx", 100, &UlcNode::recvCan, this, NODELAY);
@@ -116,8 +120,12 @@ UlcNode::UlcNode(ros::NodeHandle &n, ros::NodeHandle &pn) :
   sub_enable_ = n.subscribe<std_msgs::Bool>("dbw_enabled", 2, &UlcNode::recvEnable, this, NODELAY);
 
   // Setup CARMA subscribers
-  sub_vehicle_cmd_ = n.subscribe<autoware_msgs::VehicleCmd>("vehicle_cmd", 2, &UlcNode::recvVehicleCmd, this, NODELAY);
-
+ // sub_vehicle_cmd_ = n.subscribe<autoware_msgs::VehicleCmd>("vehicle_cmd", 2, &UlcNode::recvVehicleCmd, this, NODELAY);
+  
+  // subscribers from autoware
+  vehicle_cmd_sub_ = nh_.subscribe("vehicle_cmd", 1, &SSCInterface::callbackFromVehicleCmd, this);
+  engage_sub_ = nh_.subscribe("vehicle/engage", 1, &SSCInterface::callbackFromEngage, this);
+    
   // Setup timer for config message retransmission
   double freq = 5.0;
   getParamWithSaturation(pn, "config_frequency", freq, 5.0, 50.0);
